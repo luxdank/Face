@@ -1,0 +1,10 @@
+{
+  "name": "Sistema de Estimativa de Idade Facial",
+  "description": "Sistema profissional inteligente de estimativa de idade, faixa etária e análise facial por IA e visão computacional.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
