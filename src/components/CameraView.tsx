@@ -68,24 +68,65 @@ export default function CameraView({ onCapture, isAnalyzing, onClearResult }: Ca
   const startCamera = async () => {
     setError(null);
     onClearResult();
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
+    
+    // Lista ordenada de restrições para tentar (do mais ideal ao mais compatível)
+    const constraintsQueue = [
+      {
         video: {
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
           facingMode: "user",
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
         },
-        audio: false,
-      });
+        audio: false
+      },
+      {
+        video: {
+          facingMode: "user"
+        },
+        audio: false
+      },
+      {
+        video: true,
+        audio: false
+      }
+    ];
+
+    let stream: MediaStream | null = null;
+    let lastError: any = null;
+
+    for (const constraints of constraintsQueue) {
+      try {
+        console.log("Tentando acessar câmera com restrições:", constraints);
+        stream = await navigator.mediaDevices.getUserMedia(constraints);
+        if (stream) {
+          console.log("Câmera acessada com sucesso!");
+          break;
+        }
+      } catch (err: any) {
+        console.warn("Falha ao inicializar com restrição. Tentando próxima...", err);
+        lastError = err;
+      }
+    }
+
+    if (stream) {
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        // Forçar play imediato para mobile iOS Safari
+        videoRef.current.setAttribute("playsinline", "true");
+        videoRef.current.setAttribute("autoplay", "true");
+        videoRef.current.setAttribute("muted", "true");
+        try {
+          await videoRef.current.play();
+        } catch (playErr) {
+          console.warn("Aviso de auto-play bloqueado:", playErr);
+        }
       }
       setIsActive(true);
-    } catch (err: any) {
-      console.error("Erro ao acessar câmera:", err);
+    } else {
+      console.error("Todas as tentativas de acesso à câmera falharam:", lastError);
       setError(
-        "Não foi possível acessar a câmera. Verifique se concedeu permissão ou se outro aplicativo está usando-a."
+        `Não foi possível acessar a câmera. Verifique se concedeu permissões de câmera ao navegador no seu celular ou se outro aplicativo está utilizando-a no momento.`
       );
     }
   };
